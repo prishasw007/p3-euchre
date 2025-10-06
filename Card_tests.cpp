@@ -32,14 +32,13 @@ TEST(test_right_left_bower_logic) {
     ASSERT_FALSE(left.is_right_bower(trump));
     ASSERT_TRUE(left.is_left_bower(trump));
 
-    // Left bower is treated as trump suit
     ASSERT_EQUAL(left.get_suit(trump), trump);
 }
 
 TEST(test_is_trump) {
     Suit trump = SPADES;
-    Card right(JACK, SPADES); // right bower
-    Card left(JACK, CLUBS);  // left bower
+    Card right(JACK, SPADES);
+    Card left(JACK, CLUBS);
     Card normal_trump(ACE, SPADES);
     Card non_trump(ACE, HEARTS);
 
@@ -55,8 +54,8 @@ TEST(test_operator_comparisons_no_trump) {
     Card c3(KING, HEARTS);
     Card c4(KING, HEARTS);
 
-    ASSERT_TRUE(c3 < c1); // higher rank wins
-    ASSERT_TRUE(c1 < c2); // tie-break by suit: HEARTS < DIAMONDS
+    ASSERT_TRUE(c3 < c1);
+    ASSERT_TRUE(c1 < c2);
     ASSERT_TRUE(c1 != c2);
     ASSERT_TRUE(c1 == Card(ACE, HEARTS));
     ASSERT_TRUE(c3 <= c4);
@@ -65,31 +64,28 @@ TEST(test_operator_comparisons_no_trump) {
 
 TEST(test_card_less_with_trump) {
     Suit trump = DIAMONDS;
-    Card right(JACK, DIAMONDS);  // right bower
-    Card left(JACK, HEARTS);     // left bower
+    Card right(JACK, DIAMONDS);
+    Card left(JACK, HEARTS);
     Card trump_ace(ACE, DIAMONDS);
     Card normal_ace(ACE, SPADES);
     Card low_card(NINE, CLUBS);
 
-    ASSERT_FALSE(Card_less(right, left, trump)); // right > left 
-    ASSERT_TRUE(Card_less(low_card, trump_ace, trump)); // low non-trump < trump 
-    ASSERT_TRUE(Card_less(trump_ace, right, trump)); // ace < right bower 
-    ASSERT_TRUE(Card_less(normal_ace, trump_ace, trump)); // non-trump < trump 
+    ASSERT_TRUE(Card_less(left, right, trump));   // right > left
+    ASSERT_TRUE(Card_less(low_card, trump_ace, trump));
+    ASSERT_TRUE(Card_less(trump_ace, right, trump));
+    ASSERT_TRUE(Card_less(normal_ace, trump_ace, trump));
 }
 
 TEST(test_card_less_with_led_suit) {
     Suit trump = HEARTS;
-    Card led_ace(ACE, SPADES); // led suit
+    Card led_ace(ACE, SPADES);
     Card non_trump_follow(QUEEN, SPADES);
     Card off_suit(ACE, DIAMONDS);
-    Card trump_card(JACK, HEARTS); // right bower
+    Card trump_card(JACK, HEARTS);
 
-    // led suit beats off-suit
-    ASSERT_TRUE(Card_less(non_trump_follow, led_ace, led_ace, trump)); // Queen < Ace 
-    ASSERT_TRUE(Card_less(off_suit, led_ace, led_ace, trump));         // off-suit < led 
-
-    // trump beats everything
-    ASSERT_FALSE(Card_less(trump_card, off_suit, led_ace, trump));     // trump > off-suit 
+    ASSERT_TRUE(Card_less(non_trump_follow, led_ace, led_ace, trump));
+    ASSERT_TRUE(Card_less(off_suit, led_ace, led_ace, trump));
+    ASSERT_FALSE(Card_less(trump_card, off_suit, led_ace, trump));
 }
 
 TEST(test_stream_operators) {
@@ -113,6 +109,36 @@ TEST(test_all_ranks_trump_logic) {
             ASSERT_FALSE(c.is_face_or_ace());
         }
     }
+}
+
+TEST(test_card_comparisons_trump_context) {
+    Suit trump = HEARTS;
+
+    Card right(JACK, HEARTS);
+    Card left(JACK, DIAMONDS);
+    Card ace_trump(ACE, HEARTS);
+    Card king_trump(KING, HEARTS);
+    Card queen_trump(QUEEN, HEARTS);
+    Card non_trump_ace(ACE, SPADES);
+
+    ASSERT_TRUE(Card_less(left, right, trump));   // right > left
+    ASSERT_TRUE(Card_less(ace_trump, right, trump)); // right > ace_trump
+    ASSERT_TRUE(Card_less(queen_trump, ace_trump, trump)); // queen < ace
+    ASSERT_TRUE(Card_less(non_trump_ace, ace_trump, trump)); // non-trump < trump
+}
+
+TEST(test_card_comparisons_led_context) {
+    Suit trump = CLUBS;
+
+    Card led_ace(ACE, HEARTS);
+    Card led_queen(QUEEN, HEARTS);
+    Card off_suit(ACE, DIAMONDS);
+    Card trump_jack(JACK, CLUBS);
+
+    ASSERT_TRUE(Card_less(off_suit, led_ace, led_ace, trump));
+    ASSERT_TRUE(Card_less(off_suit, led_queen, led_queen, trump));
+    ASSERT_TRUE(Card_less(led_queen, led_ace, led_ace, trump));
+    ASSERT_FALSE(Card_less(trump_jack, led_ace, led_ace, trump));
 }
 
 TEST_MAIN()

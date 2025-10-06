@@ -43,32 +43,63 @@ public:
     }
 
     Card lead_card(Suit trump) override {
-        auto it = max_element(hand.begin(), hand.end(),
-                              [trump](const Card &a, const Card &b){
-                                  if (a.is_trump(trump) && !b.is_trump(trump)) return true;
-                                  if (!a.is_trump(trump) && b.is_trump(trump)) return false;
-                                  return a < b;
-                              });
-        Card c = *it;
-        hand.erase(it);
-        return c;
+    // If any non-trump cards exist, lead the highest non-trump
+    vector<Card> non_trumps;
+    for (const auto &c : hand) {
+        if (!c.is_trump(trump)) {
+            non_trumps.push_back(c);
+        }
     }
 
-    Card play_card(const Card &led_card, Suit trump) override {
-        Suit led_suit = led_card.get_suit(trump);
-        auto it = hand.end();
-        for (size_t i = 0; i < hand.size(); ++i) {
-            if (hand[i].get_suit(trump) == led_suit) {
-                if (it == hand.end() || hand[i] > *it) it = hand.begin() + i;
-            }
-        }
-        if (it == hand.end()) {
-            it = min_element(hand.begin(), hand.end());
-        }
-        Card c = *it;
-        hand.erase(it);
-        return c;
+    Card led;
+    if (!non_trumps.empty()) {
+        led = *max_element(non_trumps.begin(), non_trumps.end(),
+            [](const Card &a, const Card &b) { return a < b; });
+    } else {
+        // All trumps → highest by normal rank
+        led = *max_element(hand.begin(), hand.end(),
+            [](const Card &a, const Card &b) { return a < b; });
     }
+
+    auto it = find(hand.begin(), hand.end(), led);
+    hand.erase(it);
+    return led;
+}
+
+
+Card play_card(const Card &led_card, Suit trump) override {
+    Suit led_suit = led_card.get_suit(trump);
+
+    // Collect cards that follow suit
+    vector<Card> following;
+    for (const auto &c : hand) {
+        if (c.get_suit(trump) == led_suit) {
+            following.push_back(c);
+        }
+    }
+
+    Card played;
+    if (!following.empty()) {
+        // Follow suit → play highest following-suit card
+        played = *max_element(following.begin(), following.end(),
+            [trump](const Card &a, const Card &b) {
+                return Card_less(a, b, trump);
+            });
+    } else {
+        // Can't follow suit → play lowest *by rank*, not by trump order
+        played = *min_element(hand.begin(), hand.end(),
+            [](const Card &a, const Card &b) {
+                return a < b;  // normal rank comparison
+            });
+    }
+
+    auto it = find(hand.begin(), hand.end(), played);
+    hand.erase(it);
+    return played;
+}
+
+
+
 
 private:
     string name;

@@ -2,8 +2,7 @@
 #include <iostream>
 #include <array>
 #include "Card.hpp"
-// Add these includes at top if not already present
-#include <sstream>
+
 using namespace std;
 
 /////////////// Rank operator implementations - DO NOT CHANGE ///////////////
@@ -91,7 +90,6 @@ std::istream & operator>>(std::istream &is, Suit &suit) {
   return is;
 }
 
-
 /////////////// Write your implementation for Card below ///////////////
 
 // Default constructor
@@ -161,15 +159,17 @@ bool operator<(const Card &lhs, const Card &rhs) {
 }
 
 bool operator<=(const Card &lhs, const Card &rhs) {
-    return !(rhs < lhs);
+    return (lhs < rhs) || (lhs == rhs);
 }
 
+
 bool operator>(const Card &lhs, const Card &rhs) {
-    return rhs < lhs;
+    if (lhs.get_rank() != rhs.get_rank()) return lhs.get_rank() > rhs.get_rank();
+    return lhs.get_suit() > rhs.get_suit();
 }
 
 bool operator>=(const Card &lhs, const Card &rhs) {
-    return !(lhs < rhs);
+    return (lhs > rhs) || (lhs == rhs);
 }
 
 bool operator==(const Card &lhs, const Card &rhs) {
@@ -239,7 +239,6 @@ bool Card_less(const Card &a, const Card &b, const Card &led_card, Suit trump) {
     // Default fallback (shouldn’t happen)
     return Card_less(a, b, trump);
 }
-
 
 // NOTE: We HIGHLY recommend you check out the operator overloading
 // tutorial in the project spec before implementing

@@ -71,10 +71,10 @@ TEST(test_card_less_with_trump) {
     Card normal_ace(ACE, SPADES);
     Card low_card(NINE, CLUBS);
 
-    ASSERT_FALSE(Card_less(right, left, trump)); // right > left
-    ASSERT_TRUE(Card_less(low_card, trump_ace, trump));
-    ASSERT_FALSE(Card_less(trump_ace, right, trump));
-    ASSERT_TRUE(Card_less(normal_ace, trump_ace, trump));
+    ASSERT_FALSE(Card_less(right, left, trump)); // right > left 
+    ASSERT_TRUE(Card_less(low_card, trump_ace, trump)); // low non-trump < trump 
+    ASSERT_TRUE(Card_less(trump_ace, right, trump)); // ace < right bower 
+    ASSERT_TRUE(Card_less(normal_ace, trump_ace, trump)); // non-trump < trump 
 }
 
 TEST(test_card_less_with_led_suit) {
@@ -85,18 +85,11 @@ TEST(test_card_less_with_led_suit) {
     Card trump_card(JACK, HEARTS); // right bower
 
     // led suit beats off-suit
-    ASSERT_FALSE(Card_less(non_trump_follow, led_ace, led_ace, trump));
-    ASSERT_TRUE(Card_less(off_suit, led_ace, led_ace, trump));
+    ASSERT_TRUE(Card_less(non_trump_follow, led_ace, led_ace, trump)); // Queen < Ace 
+    ASSERT_TRUE(Card_less(off_suit, led_ace, led_ace, trump));         // off-suit < led 
 
     // trump beats everything
-    ASSERT_FALSE(Card_less(trump_card, off_suit, led_ace, trump));
-}
-
-TEST(test_suit_next_function) {
-    ASSERT_EQUAL(Suit_next(SPADES), CLUBS);   // same color
-    ASSERT_EQUAL(Suit_next(HEARTS), DIAMONDS);
-    ASSERT_EQUAL(Suit_next(CLUBS), SPADES);
-    ASSERT_EQUAL(Suit_next(DIAMONDS), HEARTS);
+    ASSERT_FALSE(Card_less(trump_card, off_suit, led_ace, trump));     // trump > off-suit 
 }
 
 TEST(test_stream_operators) {

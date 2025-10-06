@@ -2,7 +2,8 @@
 #include <iostream>
 #include <array>
 #include "Card.hpp"
-
+// Add these includes at top if not already present
+#include <sstream>
 using namespace std;
 
 /////////////// Rank operator implementations - DO NOT CHANGE ///////////////
@@ -187,54 +188,57 @@ Suit Suit_next(Suit suit) {
     return HEARTS; // DIAMONDS
 }
 
-// Compare two cards considering trump
+// Compare cards when only trump suit is known
 bool Card_less(const Card &a, const Card &b, Suit trump) {
-    // Right bower wins everything
-    if (a.is_right_bower(trump)) return false;
-    if (b.is_right_bower(trump)) return true;
+    // Right and left bowers
+    bool a_right = a.is_right_bower(trump);
+    bool b_right = b.is_right_bower(trump);
+    bool a_left = a.is_left_bower(trump);
+    bool b_left = b.is_left_bower(trump);
 
-    // Left bower second highest
-    if (a.is_left_bower(trump)) return false;
-    if (b.is_left_bower(trump)) return true;
+    // Right bower beats everything
+    if (a_right && !b_right) return false;
+    if (!a_right && b_right) return true;
 
-    bool a_is_trump = a.is_trump(trump);
-    bool b_is_trump = b.is_trump(trump);
+    // Left bower beats all except right bower
+    if (a_left && !b_left) return false;
+    if (!a_left && b_left) return true;
 
-    if (a_is_trump && !b_is_trump) return false;
-    if (!a_is_trump && b_is_trump) return true;
+    // If both are trump
+    if (a.is_trump(trump) && b.is_trump(trump)) {
+        return a.get_rank() < b.get_rank();
+    }
 
-    // Both trump or both non-trump
-    if (a.get_rank() != b.get_rank()) return a.get_rank() < b.get_rank();
-    return a.get_suit() < b.get_suit();
+    // If only one is trump
+    if (a.is_trump(trump) && !b.is_trump(trump)) return false;
+    if (!a.is_trump(trump) && b.is_trump(trump)) return true;
+
+    // Neither is trump — compare by rank
+    return a.get_rank() < b.get_rank();
 }
 
-// Compare two cards considering trump and led suit
+// Compare cards when both trump and led card are known
 bool Card_less(const Card &a, const Card &b, const Card &led_card, Suit trump) {
-    Suit led_suit = led_card.get_suit(); // ORIGINAL suit, not trump-adjusted
-    bool a_is_trump = a.is_trump(trump);
-    bool b_is_trump = b.is_trump(trump);
+    Suit led_suit = led_card.get_suit(trump);
+    bool a_follows_led = a.get_suit(trump) == led_suit;
+    bool b_follows_led = b.get_suit(trump) == led_suit;
 
-    // Trump beats non-trump
-    if (a_is_trump && !b_is_trump) return false;
-    if (!a_is_trump && b_is_trump) return true;
+    // If both follow led or both don't follow led, defer to trump-based comparison
+    if ((a_follows_led && b_follows_led) || (!a_follows_led && !b_follows_led)) {
+        return Card_less(a, b, trump);
+    }
 
-    // Both trump → compare using trump order
-    if (a_is_trump && b_is_trump) return Card_less(a, b, trump);
+    // One follows led, the other doesn't — the follower wins unless the other is trump
+    if (a_follows_led && !b_follows_led && !b.is_trump(trump)) return false;
+    if (!a_follows_led && b_follows_led && !a.is_trump(trump)) return true;
 
-    // Neither trump → check led suit following (use original suits)
-    bool a_follows_led = a.get_suit() == led_suit;
-    bool b_follows_led = b.get_suit() == led_suit;
+    // If one is trump and the other is not, trump wins
+    if (a.is_trump(trump) && !b.is_trump(trump)) return false;
+    if (!a.is_trump(trump) && b.is_trump(trump)) return true;
 
-    if (a_follows_led && !b_follows_led) return false;
-    if (!a_follows_led && b_follows_led) return true;
-
-    // Both led suit or both off-suit → compare rank then suit
-    if (a.get_rank() != b.get_rank()) return a.get_rank() < b.get_rank();
-    return a.get_suit() < b.get_suit();
+    // Default fallback (shouldn’t happen)
+    return Card_less(a, b, trump);
 }
-
-
-
 
 
 // NOTE: We HIGHLY recommend you check out the operator overloading

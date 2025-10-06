@@ -43,7 +43,6 @@ public:
     }
 
     Card lead_card(Suit trump) override {
-    // If any non-trump cards exist, lead the highest non-trump
     vector<Card> non_trumps;
     for (const auto &c : hand) {
         if (!c.is_trump(trump)) {
@@ -56,7 +55,6 @@ public:
         led = *max_element(non_trumps.begin(), non_trumps.end(),
             [](const Card &a, const Card &b) { return a < b; });
     } else {
-        // All trumps → highest by normal rank
         led = *max_element(hand.begin(), hand.end(),
             [](const Card &a, const Card &b) { return a < b; });
     }
@@ -69,8 +67,6 @@ public:
 
 Card play_card(const Card &led_card, Suit trump) override {
     Suit led_suit = led_card.get_suit(trump);
-
-    // Collect cards that follow suit
     vector<Card> following;
     for (const auto &c : hand) {
         if (c.get_suit(trump) == led_suit) {
@@ -80,13 +76,11 @@ Card play_card(const Card &led_card, Suit trump) override {
 
     Card played;
     if (!following.empty()) {
-        // Follow suit → play highest following-suit card
         played = *max_element(following.begin(), following.end(),
             [trump](const Card &a, const Card &b) {
                 return Card_less(a, b, trump);
             });
     } else {
-        // Can't follow suit → play lowest *by rank*, not by trump order
         played = *min_element(hand.begin(), hand.end(),
             [](const Card &a, const Card &b) {
                 return a < b;  // normal rank comparison
@@ -120,7 +114,6 @@ public:
     }
 
     bool make_trump(const Card &upcard, bool, int round, Suit &order_up_suit) const override {
-        // Implementation left for Human input
         assert(false);
         return false;
     }

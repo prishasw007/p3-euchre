@@ -56,7 +56,6 @@ TEST(test_simpleplayer_add_and_discard) {
     dave->add_card(Card(TEN, HEARTS));
 
     dave->add_and_discard(Card(NINE, SPADES));
-    // Just ensure hand size stays correct
     for (int i = 0; i < Player::MAX_HAND_SIZE; ++i) {
         Card c = dave->lead_card(SPADES);
         ASSERT_TRUE(c.get_rank() >= NINE && c.get_rank() <= ACE);
@@ -112,7 +111,7 @@ TEST(test_simpleplayer_make_trump_dealer) {
 
     Suit order_up;
     Card upcard(JACK, HEARTS);
-    // Round 2, dealer must order up to same color suit (Hearts → Diamonds)
+    // Round 2
     bool called = p->make_trump(upcard, true, 2, order_up);
 
     ASSERT_TRUE(called);
@@ -278,7 +277,7 @@ TEST(test_simpleplayer_round_flow) {
     Card led = leader->lead_card(trump);
     Card played = follower->play_card(led, trump);
 
-    ASSERT_FALSE(led < played || !(played < led)); // just ensure valid play
+    ASSERT_FALSE(led < played || !(played < led));
     delete leader;
     delete follower;
 }

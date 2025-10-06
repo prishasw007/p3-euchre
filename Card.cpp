@@ -236,7 +236,7 @@ bool Card_less(const Card &a, const Card &b, const Card &led_card, Suit trump) {
     if (a.is_trump(trump) && !b.is_trump(trump)) return false;
     if (!a.is_trump(trump) && b.is_trump(trump)) return true;
 
-    // Default fallback (shouldn’t happen)
+    // Default fallback (shouldnt happen)
     return Card_less(a, b, trump);
 }
 

@@ -5,6 +5,7 @@
 
 using namespace std;
 
+
 /////////////// Rank operator implementations - DO NOT CHANGE ///////////////
 
 constexpr const char *const RANK_NAMES[] = {
@@ -182,10 +183,12 @@ bool operator!=(const Card &lhs, const Card &rhs) {
 
 // Returns the next suit of the same color
 Suit Suit_next(Suit suit) {
-    if (suit == SPADES) return CLUBS;
-    if (suit == CLUBS) return SPADES;
-    if (suit == HEARTS) return DIAMONDS;
-    return HEARTS; // DIAMONDS
+    if (suit == SPADES) return CLUBS;      // same color (black)
+    if (suit == CLUBS) return SPADES;      // same color (black)
+    if (suit == HEARTS) return DIAMONDS;   // same color (red)
+    if (suit == DIAMONDS) return HEARTS;   // same color (red)
+    assert(false);
+    return SPADES; // default
 }
 
 // Compare cards when only trump suit is known
@@ -220,23 +223,28 @@ bool Card_less(const Card &a, const Card &b, Suit trump) {
 // Compare cards when both trump and led card are known
 bool Card_less(const Card &a, const Card &b, const Card &led_card, Suit trump) {
     Suit led_suit = led_card.get_suit(trump);
-    bool a_follows_led = a.get_suit(trump) == led_suit;
-    bool b_follows_led = b.get_suit(trump) == led_suit;
+    bool a_follows = a.get_suit(trump) == led_suit;
+    bool b_follows = b.get_suit(trump) == led_suit;
 
-    // If both follow led or both don't follow led, defer to trump-based comparison
-    if ((a_follows_led && b_follows_led) || (!a_follows_led && !b_follows_led)) {
-        return Card_less(a, b, trump);
+    // If exactly one follows led, that one is higher unless the other is trump
+    if (a_follows && !b_follows) {
+        if (b.is_trump(trump)) {
+            // b is trump; a < b
+            return true;
+        }
+        // a follows, b does not and is not trump; a > b
+        return false;
+    }
+    if (!a_follows && b_follows) {
+        if (a.is_trump(trump)) {
+            // a is trump; a > b
+            return false;
+        }
+        // b follows, a does not and is not trump; a < b
+        return true;
     }
 
-    // One follows led, the other doesn't — the follower wins unless the other is trump
-    if (a_follows_led && !b_follows_led && !b.is_trump(trump)) return false;
-    if (!a_follows_led && b_follows_led && !a.is_trump(trump)) return true;
-
-    // If one is trump and the other is not, trump wins
-    if (a.is_trump(trump) && !b.is_trump(trump)) return false;
-    if (!a.is_trump(trump) && b.is_trump(trump)) return true;
-
-    // Default fallback (shouldnt happen)
+    // Both follow led OR neither follows led: compare using trump-aware order
     return Card_less(a, b, trump);
 }
 

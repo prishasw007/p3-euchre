@@ -19,102 +19,135 @@ public:
         hand.push_back(c);
     }
 
-    bool make_trump(const Card &upcard, bool is_dealer, int round, Suit &order_up_suit) const override {
+    bool make_trump(const Card &upcard, bool is_dealer, int round, 
+                    Suit &order_up_suit) const override {
         Suit up_suit = upcard.get_suit();
         Suit next_suit = Suit_next(up_suit);
 
         if (round == 1) {
-            int trump_count = 0;
+            // First round: count only cards of the upcard's printed suit
+            int suit_count = 0;
             for (const auto &c : hand) {
-                if (c.is_trump(up_suit)) ++trump_count;
+                if (c.get_suit() == up_suit) ++suit_count;
             }
-            if (trump_count >= 2) {
+            // Eldest/non-dealer needs >=2; dealer needs >=3 to order up
+            const int needed = is_dealer ? 3 : 2;
+            if (suit_count >= needed) {
                 order_up_suit = up_suit;
                 return true;
             }
             return false;
         }
 
+        // Second round: order up next suit if holding at least one card of that
+        // OR if dealer (screw the dealer rule)
         if (is_dealer) {
             order_up_suit = next_suit;
             return true;
         }
-
-        int good_cards = 0;
+        
+        // Non-dealer: order up next suit if holding at least one card of that
         for (const auto &c : hand) {
-            if (c.is_trump(next_suit) && c.is_face_or_ace()) ++good_cards;
+            if (c.get_suit() == next_suit) {
+                order_up_suit = next_suit;
+                return true;
+            }
         }
-        if (good_cards >= 1) {
-            order_up_suit = next_suit;
-            return true;
-        }
-
+        
         return false;
     }
 
     void add_and_discard(const Card &upcard) override {
         hand.push_back(upcard);
-        // Discard the lowest rank card (ignore trump rules)
-        auto min_it = min_element(hand.begin(), hand.end(),
-                                  [](const Card &a, const Card &b){
-                                      return a.get_rank() < b.get_rank();
-                                  });
-        hand.erase(min_it);
+        // Discard preference: lowest non-trump if any; otherwise lowest trump,
+        // avoiding right bower if possible
+        Suit trump = upcard.get_suit();
+        // Try to find lowest non-trump
+        auto best_it = hand.end();
+        for (auto it = hand.begin(); it != hand.end(); ++it) {
+            if (!it->is_trump(trump)) {
+                if (best_it == hand.end() || Card_less(*it, *best_it, trump)) best_it = it;
+            }
+        }
+        if (best_it == hand.end()) {
+            // All trumps: discard lowest trump, but avoid right bower if possible
+            // First find any non-right-bower trump as candidate
+            for (auto it = hand.begin(); it != hand.end(); ++it) {
+                if (it->is_trump(trump) && !it->is_right_bower(trump)) {
+                    if (best_it == hand.end() || 
+                        Card_less(*it, *best_it, trump)) best_it = it;
+                }
+            }
+            // If all are right bower (only possible if exactly one trump), 
+            // fallback to absolute lowest
+            if (best_it == hand.end()) {
+                best_it = hand.begin();
+                for (auto it = hand.begin(); it != hand.end(); ++it) {
+                    if (Card_less(*it, *best_it, trump)) best_it = it;
+                }
+            }
+        }
+        hand.erase(best_it);
     }
 
     Card lead_card(Suit trump) override {
-        vector<Card> non_trumps;
-        for (const auto &c : hand) {
-            if (!c.is_trump(trump)) {
-                non_trumps.push_back(c);
+        // Lead highest non-trump if any; else highest trump
+        auto pick_it = hand.end();
+        for (auto it = hand.begin(); it != hand.end(); ++it) {
+            if (!it->is_trump(trump)) {
+                if (pick_it == hand.end() || 
+                    Card_less(*pick_it, *it, trump)) pick_it = it;
             }
         }
-
-        Card led;
-        if (!non_trumps.empty()) {
-            // Lead highest non-trump
-            led = *max_element(non_trumps.begin(), non_trumps.end(),
-                               [trump](const Card &a, const Card &b) {
-                                   return Card_less(a, b, trump);
-                               });
-        } else {
-            // All cards are trump, lead highest trump
-            led = *max_element(hand.begin(), hand.end(),
-                               [trump](const Card &a, const Card &b) {
-                                   return Card_less(a, b, trump);
-                               });
+        if (pick_it == hand.end()) {
+            for (auto it = hand.begin(); it != hand.end(); ++it) {
+                if (pick_it == hand.end() || 
+                    Card_less(*pick_it, *it, trump)) pick_it = it;
+            }
         }
-
-        auto it = find(hand.begin(), hand.end(), led);
-        hand.erase(it);
+        Card led = *pick_it;
+        hand.erase(pick_it);
         return led;
     }
 
     Card play_card(const Card &led_card, Suit trump) override {
         Suit led_suit = led_card.get_suit(trump);
-        vector<Card> following;
-        for (const auto &c : hand) {
-            if (c.get_suit(trump) == led_suit) {
-                following.push_back(c);
+
+        // Try to follow suit: play highest card of led suit
+        auto it_to_play = hand.end();
+        for (auto it = hand.begin(); it != hand.end(); ++it) {
+            if (it->get_suit(trump) == led_suit) {
+                if (it_to_play == hand.end() || 
+                    Card_less(*it_to_play, *it, trump)) {
+                    it_to_play = it;
+                }
             }
         }
 
-        Card played;
-        if (!following.empty()) {
-            // Follow suit with highest card of that suit
-            played = *max_element(following.begin(), following.end(),
-                                [trump](const Card &a, const Card &b){ return Card_less(a,b,trump); });
-        } else {    
-            // Cannot follow suit: play the card with lowest rank (ignore trump)
-            played = *min_element(hand.begin(), hand.end(),
-                                [](const Card &a, const Card &b){ return a.get_rank() < b.get_rank(); });
-        }   
+        if (it_to_play != hand.end()) {
+            Card played = *it_to_play;
+            hand.erase(it_to_play);
+            return played;
+        }
 
-        auto it = find(hand.begin(), hand.end(), played);
-        hand.erase(it);
+        // Cannot follow: discard lowest non-trump if any; otherwise lowest trump
+        auto pick_it = hand.end();
+        for (auto it = hand.begin(); it != hand.end(); ++it) {
+            if (!it->is_trump(trump)) {
+                if (pick_it == hand.end() || 
+                    Card_less(*it, *pick_it, trump)) pick_it = it;
+            }
+        }
+        if (pick_it == hand.end()) {
+            pick_it = hand.begin();
+            for (auto it = hand.begin(); it != hand.end(); ++it) {
+                if (Card_less(*it, *pick_it, trump)) pick_it = it;
+            }
+        }
+        Card played = *pick_it;
+        hand.erase(pick_it);
         return played;
     }
-
 
 private:
     string name;

@@ -216,8 +216,11 @@ bool Card_less(const Card &a, const Card &b, Suit trump) {
     if (a.is_trump(trump) && !b.is_trump(trump)) return false;
     if (!a.is_trump(trump) && b.is_trump(trump)) return true;
 
-    // Neither is trump — compare by rank
-    return a.get_rank() < b.get_rank();
+    // Neither is trump — compare by rank, then suit to break ties
+    if (a.get_rank() != b.get_rank()) {
+        return a.get_rank() < b.get_rank();
+    }
+    return a.get_suit() < b.get_suit();
 }
 
 // Compare cards when both trump and led card are known

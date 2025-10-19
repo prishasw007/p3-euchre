@@ -71,14 +71,14 @@ public:
   Card lead_card(Suit trump) override {
     auto best = hand.end();
 
-    // Highest non-trump using operator<
+    // Prefer highest non-trump using base ordering
     for (auto it = hand.begin(); it != hand.end(); ++it) {
       if (!it->is_trump(trump)) {
         if (best == hand.end() || (*best < *it)) best = it;
       }
     }
 
-    // If none, highest overall (trump) using Card_less
+    // If only trumps remain, pick the strongest using trump-aware order
     if (best == hand.end()) {
       for (auto it = hand.begin(); it != hand.end(); ++it) {
         if (best == hand.end() || Card_less(*best, *it, trump)) best = it;

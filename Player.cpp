@@ -91,7 +91,8 @@ public:
   }
 
   // If can follow suit: play the HIGHEST of the led suit (Card_less).
-  // Else: play the LOWEST overall using operator< (matches test expectations).
+  // Else: prefer to slough the LOWEST non-trump using operator<; if all cards
+  // are trump, play the LOWEST trump using Card_less (trump-aware).
   Card play_card(const Card &led_card, Suit trump) override {
     const Suit led_suit = led_card.get_suit(trump);
 
@@ -110,13 +111,30 @@ public:
       return played;
     }
 
-    // Can't follow: play lowest overall by operator<
-    auto min_it = hand.begin();
+    // Can't follow: play lowest non-trump if possible
+    auto lowest_non_trump = hand.end();
     for (auto it = hand.begin(); it != hand.end(); ++it) {
-      if (*it < *min_it) min_it = it;
+      if (!it->is_trump(trump)) {
+        if (lowest_non_trump == hand.end() || (*it < *lowest_non_trump)) {
+          lowest_non_trump = it;
+        }
+      }
     }
-    Card played = *min_it;
-    hand.erase(min_it);
+    if (lowest_non_trump != hand.end()) {
+      Card played = *lowest_non_trump;
+      hand.erase(lowest_non_trump);
+      return played;
+    }
+
+    // All remaining cards are trump: play the lowest trump by Card_less
+    auto lowest_trump = hand.begin();
+    for (auto it = hand.begin(); it != hand.end(); ++it) {
+      if (Card_less(*it, *lowest_trump, trump)) {
+        lowest_trump = it;
+      }
+    }
+    Card played = *lowest_trump;
+    hand.erase(lowest_trump);
     return played;
   }
 

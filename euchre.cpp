@@ -62,8 +62,8 @@ public:
       const pair<int,int> tricks = play_hand((dealer + 1) % 4, trump);
 
       // Score the hand
-      apply_scoring(maker_index, tricks.first, tricks.second,
-                    team0_points, team1_points);
+      ScoreState s{tricks.first, tricks.second, team0_points, team1_points};
+      apply_scoring(maker_index, s);
 
       // Print score w/ extra newline
       print_scores(team0_points, team1_points);
@@ -193,27 +193,32 @@ private:
     return winning_index;
   }
 
-  void apply_scoring(int maker_index,
-                     int team0_tricks, int team1_tricks,
-                     int &team0_points, int &team1_points) const {
-    // maker_index is guaranteed valid by make_trump()
+  struct ScoreState {
+    int team0_tricks;
+    int team1_tricks;
+    int &team0_points;
+    int &team1_points;
+  };
+
+
+  void apply_scoring(int maker_index, const ScoreState &s) const {
     const bool maker_team0 = (maker_index % 2 == 0);
 
     if (maker_team0) {
-      if (team0_tricks >= 3) {
-        if (team0_tricks == 5) cout << "march!" << endl;
-        team0_points += (team0_tricks == 5 ? 2 : 1);
+      if (s.team0_tricks >= 3) {
+        if (s.team0_tricks == 5) cout << "march!" << endl;
+        s.team0_points += (s.team0_tricks == 5 ? 2 : 1);
       } else {
         cout << "euchred!" << endl;
-        team1_points += 2;
+        s.team1_points += 2;
       }
     } else {
-      if (team1_tricks >= 3) {
-        if (team1_tricks == 5) cout << "march!" << endl;
-        team1_points += (team1_tricks == 5 ? 2 : 1);
+      if (s.team1_tricks >= 3) {
+        if (s.team1_tricks == 5) cout << "march!" << endl;
+        s.team1_points += (s.team1_tricks == 5 ? 2 : 1);
       } else {
         cout << "euchred!" << endl;
-        team0_points += 2;
+        s.team0_points += 2;
       }
     }
   }

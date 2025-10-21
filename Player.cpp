@@ -19,8 +19,8 @@ public:
     hand.push_back(c);
   }
 
-  // Round 1: order up if you have >= 2 trump (including left bower).
-  // Round 2: if dealer => must choose next suit; else choose next suit iff you have >= 1 in that suit.
+  // Round 1 order up if you have  2more than trump.
+  // round 2 dealer picks next suit others pick if they have one
   bool make_trump(const Card &upcard, bool is_dealer, int round,
                   Suit &order_up_suit) const override {
     const Suit up_suit   = upcard.get_suit();
@@ -110,10 +110,22 @@ public:
       return played;
     }
 
-    // Can't follow: play lowest overall by operator<
+    /// Can't follow: play the lowest overall using Card_less,
+    auto better_throw = [trump](const Card &a, const Card &b) {
+    bool at = a.is_trump(trump), bt = b.is_trump(trump);
+    if (at != bt) return !at && bt; // prefer non-trump (a) over trump (b)
+
+    bool a_lt_b = Card_less(a, b, trump);
+    bool b_lt_a = Card_less(b, a, trump);
+    if (a_lt_b != b_lt_a) return a_lt_b; // a strictly weaker than b
+
+    // Equal by Card_less: fall back to plain ordering (rank, then suit)
+    return a < b;
+    };
+
     auto min_it = hand.begin();
     for (auto it = hand.begin(); it != hand.end(); ++it) {
-      if (*it < *min_it) min_it = it;
+        if (better_throw(*it, *min_it)) min_it = it;
     }
     Card played = *min_it;
     hand.erase(min_it);
